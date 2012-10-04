@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent"
+  android:layout_gravity="top"
+
+  >
+  
+    <drinking.android.chess.WelcomeView
+  		android:id="@+id/firstview" 
+    	 android:layout_width="fill_parent"
+    	  android:layout_height="fill_parent" 
+  />  
+
+    <com.adchina.android.ads.AdView
+    	android:id="@+id/adview"
+    	android:layout_width="fill_parent" 
+    	android:layout_height="64px"
+ 
+    />
+
+
+</FrameLayout>

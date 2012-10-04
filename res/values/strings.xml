@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">Hello World, Chess!</string>
+    <string name="app_name">中国象棋</string>
+      <!--  BluetoothChat -->
+    <string name="send">发送</string>
+    <string name="not_connected">没有连接设备</string>
+    <string name="bt_not_enabled_leaving">蓝牙设备不能用...退出...</string>
+    <string name="title_connecting">连接中</string>
+    <string name="title_connected_to">已连接 </string>
+    <string name="title_not_connected">没有连接</string>
+
+    <!--  DeviceListActivity -->
+    <string name="scanning">正在搜索设备...</string>
+    <string name="select_device">选择一个设备连接</string>
+    <string name="none_paired">没有配对设备</string>
+    <string name="none_found">没有发现设备</string>
+    <string name="title_paired_devices">已配对的设备</string>
+    <string name="title_other_devices">别的可用设备</string>
+    <string name="button_scan">搜索其他设备</string>
+
+    <!-- Options Menu -->
+    <string name="connect">连接其他设备</string>
+    <string name="discoverable">设备可被搜索</string>
+    <string name="helpinfo">
+    "\t2.0.2更新说明：根据网友意见改正了 人机对战时可以移动对方棋子的问题 同时由于人机对战时需要大量的计算 所以速度会慢一点\n
+    \t蓝牙联机需要先点击菜单按钮，打开蓝牙设备并设置设备可见，才能搜索到设备，在菜单中选择开棋。由于设备暂无更新后的蓝牙对战可能有不足之处还请谅解，我会在开学后进行全面的测试。\n
+    \t问题反馈请联系：\n    浙工大 Drinking\n    邮箱：pan49@126.com"\n\t谢谢您的支持 我会继续努力
+    </string>
+</resources>
