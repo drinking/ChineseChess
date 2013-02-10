@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<color name="background_color">#a2d03b</color>
+	<color name="text_color">#FFFFFF</color>
+	<drawable name="list_item_selected">#fff19723</drawable>
+	<drawable name="list_item">#ffffffff</drawable>
+	<dimen name="item_height">50dp</dimen>
+	<dimen name="bar_height">50dp</dimen>
+	<color name="white">#ffffffff</color>
+	<color name="black">#ff000000</color>
+	<color name="light_green">#ffd5f996</color>
+	<drawable name="transparent_blue">#88000058</drawable>
+	<dimen name="bottom_tab_font_size">14dp</dimen>
+	<dimen name="bottom_tab_padding_up">2dp</dimen>
+	<dimen name="bottom_tab_padding_drawable">0dp</dimen>
+	<drawable name="black">#FF000000</drawable>
+	<drawable name="white">#FFFFFFFF</drawable>
+	<drawable name="transparent">#00000000</drawable>
+	<drawable name="red">#FFFF0000</drawable>
+    <drawable name="light_gray">#FFEFEFEF</drawable>
+    <drawable name="light_blue">#FF9bd3ea</drawable>
+</resources>

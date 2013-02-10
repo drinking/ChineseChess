@@ -2,7 +2,6 @@ package drinking.android.chess;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -53,8 +52,8 @@ public class WelcomeView extends View {
 	Handler myhandler;
 
 	public void init() {
-		INITOP = ChessActivity.screenheight / 4;
-		INILEFT = (ChessActivity.screenweight - 140) / 2;
+		INITOP = 0;//ChessActivity.screenheight / 4;
+		INILEFT = 0;//(ChessActivity.screenweight - 140) / 2;
 		INIBOTTOM = INITOP + 40;
 		INIRIGHT = INILEFT + 140;
 		// myhandler=handler;

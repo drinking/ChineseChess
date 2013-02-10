@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import drinking.android.chess.R;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.StateListDrawable;
+import drinking.android.chess.R;
 
 public class SelectorUtils<T extends Enum> {
 

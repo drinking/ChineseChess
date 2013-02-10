@@ -1,6 +1,7 @@
 package drinking.android.chess;
 
 import java.util.ArrayList;
+
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,12 +12,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Paint.Align;
 import android.graphics.Path;
 import android.graphics.Rect;
-import android.graphics.Paint.Align;
-import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
@@ -111,7 +110,6 @@ public class BGameView extends View {
 	private Paint paint;
 	private Resources res;
 	private String message;
-	private String textshow;
 	public int sider = 2;
 	public int status;
 	public int chooseside;
@@ -152,8 +150,8 @@ public class BGameView extends View {
 		chooseTarget = BitmapFactory.decodeResource(res, R.drawable.choice);
 		chessboard = BitmapFactory.decodeResource(res, R.drawable.line);
 		int screenWidth, screenHeight;
-		screenWidth = BluetoothChat.screenweight;
-		screenHeight = BluetoothChat.screenheight;
+		screenWidth = 0;
+		screenHeight = 0;
 		timertask = new BChessTimer();
 		timertask.start();
 		chessedge = (int) screenWidth / 9;
@@ -264,24 +262,14 @@ public class BGameView extends View {
 			}
 
 			if (LBrect2.contains((int) event.getX(), (int) event.getY())) {
-				// status=BluetoothChat.STATUS_ASKLOSE;
 
-				Dlg(BluetoothChat.MESSAGE_LOSE);
-				// myhandler.sendEmptyMessage(BluetoothChat.MESSAGE_LOSE);
-				// Toast.makeText(mycontext,"已发出认输请求",1000).show();
-
+				Dlg(BluetoothGameActivity.MESSAGE_LOSE,"对方认输");
 			}
 			if (RBrect2.contains((int) event.getX(), (int) event.getY())) {
-				// status=BluetoothChat.STATUS_REGRET;
-				Dlg(BluetoothChat.MESSAGE_REGRET);
-				// myhandler.sendEmptyMessage(BluetoothChat.MESSAGE_REGRET);
-				// Toast.makeText(mycontext,"已发出悔棋请求",1000).show();
+				Dlg(BluetoothGameActivity.MESSAGE_REGRET,"对方悔棋");
 			}
 			if (DBrect2.contains((int) event.getX(), (int) event.getY())) {
-				// status=BluetoothChat.STATUS_ASKDRAW;
-				Dlg(BluetoothChat.MESSAGE_DRAW);
-				// myhandler.sendEmptyMessage(BluetoothChat.MESSAGE_DRAW);
-				// Toast.makeText(mycontext,"已发出和棋请求",1000).show();
+				Dlg(BluetoothGameActivity.MESSAGE_DRAW,"对方求和");
 			}
 
 		}
@@ -324,8 +312,6 @@ public class BGameView extends View {
 			if (CanMove(x, y) && WhoseTurn()) {
 				di = x;
 				dj = y;
-				MessageSend(BluetoothChat.STATUS_NEXTSTEP);
-				myhandler.sendEmptyMessage(BluetoothChat.MESSAGE_SOUND);
 				canmove = false;
 				step.add(new Step(first_i, first_j,
 						iniposition[first_i][first_j], di, dj,
@@ -628,18 +614,6 @@ public class BGameView extends View {
 		return false;
 	}
 
-	public void MessageSend(int st) {
-		status = st;
-		message = Integer.toString(st) + "a" + Integer.toString(first_i) + "a"
-				+ Integer.toString(first_j) + "a" + Integer.toString(di) + "a"
-				+ Integer.toString(dj);
-		Message msg = myhandler.obtainMessage(BluetoothChat.MESSAGE_NEXTSTEP);
-		Bundle bundle = new Bundle();
-		bundle.putString("STEP", message);
-		msg.setData(bundle);
-		myhandler.sendMessage(msg);
-
-	}
 
 	public void RecieveMessage(String msg) {
 
@@ -650,27 +624,25 @@ public class BGameView extends View {
 		int ddi = Integer.parseInt(value[3]);
 		int ddj = Integer.parseInt(value[4]);
 		switch (st) {
-		case BluetoothChat.STATUS_AGREE:
+		case BluetoothGameActivity.STATUS_AGREE:
 			DealWithAgreement();
 			break;
-		case BluetoothChat.STATUS_DISAGREE:
+		case BluetoothGameActivity.STATUS_DISAGREE:
 			Toast.makeText(mycontext, "对方不同意你的行为", 1000).show();
 			break;
-		case BluetoothChat.STATUS_RED:
-			AskSide(BluetoothChat.STATUS_RED);
+		case BluetoothGameActivity.STATUS_RED:
+			AskSide(BluetoothGameActivity.STATUS_RED);
 			break;
-		case BluetoothChat.STATUS_BLACK:
-			AskSide(BluetoothChat.STATUS_BLACK);
+		case BluetoothGameActivity.STATUS_BLACK:
+			AskSide(BluetoothGameActivity.STATUS_BLACK);
 			break;
-		case BluetoothChat.STATUS_ASKDRAW:
-			textshow = "对方求和";
-			Request();
+		case BluetoothGameActivity.STATUS_ASKDRAW:
+			Request("对方求和");
 			break;
-		case BluetoothChat.STATUS_ASKLOSE:
-			textshow = "对方认输";
-			Request();
+		case BluetoothGameActivity.STATUS_ASKLOSE:
+			Request("对方认输");
 			break;
-		case BluetoothChat.STATUS_NEXTSTEP:
+		case BluetoothGameActivity.STATUS_NEXTSTEP:
 			step.add(new Step(9 - ffi, 8 - ffj, iniposition[9 - ffi][8 - ffj],
 					9 - ddi, 8 - ddj, iniposition[9 - ddi][8 - ddj]));
 			canmove = true;
@@ -682,14 +654,13 @@ public class BGameView extends View {
 			}
 			iniposition[9 - ddi][8 - ddj] = iniposition[9 - ffi][8 - ffj];
 			iniposition[9 - ffi][8 - ffj] = 0;
-			myhandler.sendEmptyMessage(BluetoothChat.MESSAGE_SOUND);
+			myhandler.sendEmptyMessage(BluetoothGameActivity.MESSAGE_SOUND);
 			postInvalidate();
 			break;
-		case BluetoothChat.STATUS_ASKAGAIN:
+		case BluetoothGameActivity.STATUS_ASKAGAIN:
 			break;
-		case BluetoothChat.STATUS_REGRET:
-			textshow = "对方请求悔棋";
-			Request();
+		case BluetoothGameActivity.STATUS_REGRET:
+			Request("对方请求悔棋");
 			break;
 
 		}
@@ -727,13 +698,13 @@ public class BGameView extends View {
 	public void ChooseSide(int who) {
 		if (who == 1)// 代表别人来申请0代表自己申请
 		{
-			if (chooseside == BluetoothChat.STATUS_RED) {
-				chooseside = BluetoothChat.STATUS_BLACK;
+			if (chooseside == BluetoothGameActivity.STATUS_RED) {
+				chooseside = BluetoothGameActivity.STATUS_BLACK;
 			} else {
-				chooseside = BluetoothChat.STATUS_RED;
+				chooseside = BluetoothGameActivity.STATUS_RED;
 			}
 		}
-		if (chooseside == BluetoothChat.STATUS_RED) {
+		if (chooseside == BluetoothGameActivity.STATUS_RED) {
 
 			int size = BitmapFactory.decodeResource(res, R.drawable.bbishop)
 					.getHeight();
@@ -790,7 +761,7 @@ public class BGameView extends View {
 			canmove = true;
 			candraw = true;
 			timertask.Clear();
-		} else if (chooseside == BluetoothChat.STATUS_BLACK) {
+		} else if (chooseside == BluetoothGameActivity.STATUS_BLACK) {
 
 			int size = BitmapFactory.decodeResource(res, R.drawable.bbishop)
 					.getHeight();
@@ -856,10 +827,12 @@ public class BGameView extends View {
 		chooseside = as;
 		new AlertDialog.Builder(mycontext)
 				.setTitle("对方请求选择")
-				.setMessage(as == BluetoothChat.STATUS_RED ? "红方" : "黑方")
+				.setMessage(
+						as == BluetoothGameActivity.STATUS_RED ? "红方" : "黑方")
 				.setPositiveButton("同意", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
-						myhandler.sendEmptyMessage(BluetoothChat.MESSAGE_AGREE);
+						myhandler
+								.sendEmptyMessage(BluetoothGameActivity.MESSAGE_AGREE);
 						ChooseSide(1);
 					}
 
@@ -870,21 +843,22 @@ public class BGameView extends View {
 									int which) {
 
 								myhandler
-										.sendEmptyMessage(BluetoothChat.MESSAGE_DISAGREE);
+										.sendEmptyMessage(BluetoothGameActivity.MESSAGE_DISAGREE);
 							}
 
 						}).show();
 
 	}
 
-	public void Request() {
+	public void Request(final String textinfo) {
 		new AlertDialog.Builder(mycontext)
 				.setTitle("对方有意见了")
-				.setMessage(textshow)
+				.setMessage(textinfo)
 				.setPositiveButton("同意", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
-						myhandler.sendEmptyMessage(BluetoothChat.MESSAGE_AGREE);
-						if (textshow.equals("对方请求悔棋")) {
+						myhandler
+								.sendEmptyMessage(BluetoothGameActivity.MESSAGE_AGREE);
+						if (textinfo.equals("对方请求悔棋")) {
 							BackStep();
 						} else {
 							candraw = false;
@@ -902,28 +876,28 @@ public class BGameView extends View {
 									int which) {
 
 								myhandler
-										.sendEmptyMessage(BluetoothChat.MESSAGE_DISAGREE);
+										.sendEmptyMessage(BluetoothGameActivity.MESSAGE_DISAGREE);
 							}
 
 						}).show();
 	}
 
-	public void Dlg(int meg) {
-		Dlgmessage = meg;
-		new AlertDialog.Builder(mycontext).setTitle("真的要发送送吗")
+	public void Dlg(final int meg,final String textshow) {
+		new AlertDialog.Builder(mycontext)
+				.setTitle("真的要发送送吗")
 				.setMessage(textshow)
 				.setPositiveButton("确定", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 
-						myhandler.sendEmptyMessage(Dlgmessage);
-						if (Dlgmessage == BluetoothChat.MESSAGE_LOSE) {
-							status = BluetoothChat.STATUS_ASKLOSE;
+						myhandler.sendEmptyMessage(meg);
+						if (meg == BluetoothGameActivity.MESSAGE_LOSE) {
+							status = BluetoothGameActivity.STATUS_ASKLOSE;
 						}
-						if (Dlgmessage == BluetoothChat.MESSAGE_DRAW) {
-							status = BluetoothChat.STATUS_ASKDRAW;
+						if (meg == BluetoothGameActivity.MESSAGE_DRAW) {
+							status = BluetoothGameActivity.STATUS_ASKDRAW;
 						}
-						if (Dlgmessage == BluetoothChat.MESSAGE_REGRET) {
-							status = BluetoothChat.STATUS_REGRET;
+						if (meg == BluetoothGameActivity.MESSAGE_REGRET) {
+							status = BluetoothGameActivity.STATUS_REGRET;
 						}
 
 					}
@@ -940,27 +914,27 @@ public class BGameView extends View {
 	public void DealWithAgreement() {
 		switch (status) {
 
-		case BluetoothChat.STATUS_RED:
+		case BluetoothGameActivity.STATUS_RED:
 			chooseside = status;
 			ChooseSide(0);
 			break;
-		case BluetoothChat.STATUS_BLACK:
+		case BluetoothGameActivity.STATUS_BLACK:
 			chooseside = status;
 			ChooseSide(0);
 			break;
-		case BluetoothChat.STATUS_ASKDRAW:
+		case BluetoothGameActivity.STATUS_ASKDRAW:
 			candraw = false;
 			canmove = false;
 			timertask.Clear();
 			Toast.makeText(mycontext, "同意和棋", 1000).show();
 			break;
-		case BluetoothChat.STATUS_ASKLOSE:
+		case BluetoothGameActivity.STATUS_ASKLOSE:
 			candraw = false;
 			canmove = false;
 			timertask.Clear();
 			Toast.makeText(mycontext, "同意认输", 1000).show();
 			break;
-		case BluetoothChat.STATUS_REGRET:
+		case BluetoothGameActivity.STATUS_REGRET:
 			BackStep();
 			break;
 

@@ -23,8 +23,5 @@
     <string name="connect">连接其他设备</string>
     <string name="discoverable">设备可被搜索</string>
     <string name="helpinfo">
-    "\t2.0.2更新说明：根据网友意见改正了 人机对战时可以移动对方棋子的问题 同时由于人机对战时需要大量的计算 所以速度会慢一点\n
-    \t蓝牙联机需要先点击菜单按钮，打开蓝牙设备并设置设备可见，才能搜索到设备，在菜单中选择开棋。由于设备暂无更新后的蓝牙对战可能有不足之处还请谅解，我会在开学后进行全面的测试。\n
-    \t问题反馈请联系：\n    浙工大 Drinking\n    邮箱：pan49@126.com"\n\t谢谢您的支持 我会继续努力
     </string>
 </resources>

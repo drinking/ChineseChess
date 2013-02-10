@@ -2,14 +2,9 @@ package drinking.android.chess;
 
 import java.util.ArrayList;
 
-import drinking.android.algorithm.CHESSMOVE;
-import drinking.android.algorithm.Eveluation;
-import drinking.android.algorithm.MoveGenerator;
-import drinking.android.algorithm.SearchEngine;
+import org.drinking.utils.DrawUtils;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -17,17 +12,21 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.Paint.Align;
-import android.os.Handler;
-import android.util.Log;
+import android.graphics.Path;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
 public class GameView extends View {
 
+	enum EVENT {
+		LOSE, DRAW, REGRET
+	}
+
+	GameController gameController;
 	final int NOCHESS = 0;// 没有棋子
 	final int B_KING = 1;// 黑帅
 	final int B_CAR = 2; // 黑车
@@ -48,11 +47,7 @@ public class GameView extends View {
 	final int R_PAWN = 14;// 红兵
 
 	final int vspeople = 0;
-	final int vscomputer = 1;
 	int vsmodle;
-	MoveGenerator m_pMG;
-	Eveluation m_pEvel;
-	SearchEngine m_pSE;
 	private int[][] iniposition = {
 			{ B_CAR, B_HORSE, B_ELEPHANT, B_BISHOP, B_KING, B_BISHOP,
 					B_ELEPHANT, B_HORSE, B_CAR },
@@ -75,16 +70,6 @@ public class GameView extends View {
 					NOCHESS, NOCHESS },
 			{ R_CAR, R_HORSE, R_ELEPHANT, R_BISHOP, R_KING, R_BISHOP,
 					R_ELEPHANT, R_HORSE, R_CAR } };
-	/*
-	 * private int[][] iniposition= { {5,4,3,2,1,2,3,4,5}, {0,0,0,0,0,0,0,0,0},
-	 * {0,6,0,0,0,0,0,6,0}, {7,0,7,0,7,0,7,0,7}, {0,0,0,0,0,0,0,0,0},
-	 * {0,0,0,0,0,0,0,0,0},
-	 * 
-	 * {14,0,14,0,14,0,14,0,14}, {0,13,0,0,0,0,0,13,0}, {0,0,0,0,0,0,0,0,0},
-	 * {12,11,10,9,8,9,10,11,12}
-	 * 
-	 * };
-	 */
 
 	private final int[][] startposition = {
 			{ B_CAR, B_HORSE, B_ELEPHANT, B_BISHOP, B_KING, B_BISHOP,
@@ -123,7 +108,6 @@ public class GameView extends View {
 	boolean canmove = false;
 	Bitmap[] chessImage = new Bitmap[14];
 	Bitmap chooseTarget;
-	Bitmap chessboard;
 	Bitmap rbutton;
 	Bitmap lbutton;
 	Bitmap dbutton;
@@ -134,13 +118,12 @@ public class GameView extends View {
 	Bitmap timebg2;
 	private Paint paint;
 	private Resources res;
-	public int sider = 2;
-	private int chooseside;
+	Role role;
+
 	private boolean candraw = false;
 	private Context mycontext;
 	int chessedge;
 	int cwidth, cheight;
-	public int status = 1000;
 	Rect boardrect;
 	Rect chessrect;
 	Rect LBrect;
@@ -155,29 +138,23 @@ public class GameView extends View {
 
 	Path path2;
 	private ArrayList<Step> step = new ArrayList<Step>();
-	Handler myhandler;
 	int i = 0;
-	ChessTimer timertask = null;
+	Bitmap chessBoard;
 
-	public GameView(Context context, Handler handler) {
+	public GameView(Context context, GameController controller) {
 		super(context);
-		// TODO Auto-generated constructor stub
+		gameController = controller;
 		mycontext = context;
-		myhandler = handler;
 		paint = new Paint();
 		paint.setColor(Color.BLACK);
 		paint.setTextAlign(Align.CENTER);
 		res = context.getResources();
-		vswho();
-		timertask = new ChessTimer();
-		timertask.start();
-		chessboard = BitmapFactory.decodeResource(res, R.drawable.line);
-		int screenWidth, screenHeight;
-		screenWidth = ChessActivity.screenweight;
-		screenHeight = ChessActivity.screenheight;
+		int screenWidth = controller.getScreenWidth();
+		int screenHeight = controller.getScreenHeight();
+
 		chessedge = (int) screenWidth / 9;
 		paint.setTextSize(chessedge / 2);
-		START_POINT_X = 0;
+		START_POINT_X = (screenWidth - 9 * chessedge) / 2;
 		START_POINT_Y = ((screenHeight - 9 * chessedge) / 2) - chessedge / 2;// 第一个棋子的坐标
 		cwidth = START_POINT_X + 9 * chessedge;// 棋子铺满时的长宽
 		cheight = START_POINT_Y + 10 * chessedge;
@@ -227,23 +204,26 @@ public class GameView extends View {
 		dbutton2 = BitmapFactory.decodeResource(res, R.drawable.draw2);
 		timebg = BitmapFactory.decodeResource(res, R.drawable.timebg);
 		timebg2 = BitmapFactory.decodeResource(res, R.drawable.timebg2);
-
+		chessBoard = new DrawUtils(screenWidth, screenHeight).drawChessboard();
 	}
 
 	public void onDraw(Canvas canvas) {
-		this.setBackgroundResource(R.drawable.bg);
-		canvas.drawBitmap(chessboard, null, boardrect, paint);
-		canvas.drawBitmap(lbutton2, null, LBrect, paint);
-		canvas.drawBitmap(rbutton2, null, RBrect, paint);
-		canvas.drawBitmap(dbutton2, null, DBrect, paint);
-		canvas.drawBitmap(lbutton, null, LBrect2, paint);
-		canvas.drawBitmap(rbutton, null, RBrect2, paint);
-		canvas.drawBitmap(dbutton, null, DBrect2, paint);
-		canvas.drawBitmap(timebg2, null, Trect1, paint);
-		canvas.drawBitmap(timebg, null, Trect2, paint);
+		this.setBackgroundResource(R.drawable.yangpi);
+		// canvas.drawBitmap(chessboard, null, boardrect, paint);
+		canvas.drawBitmap(chessBoard, 0, 0, paint);
+		// canvas.drawBitmap(lbutton2, null, LBrect, paint);
+		// canvas.drawBitmap(rbutton2, null, RBrect, paint);
+		// canvas.drawBitmap(dbutton2, null, DBrect, paint);
+		// canvas.drawBitmap(lbutton, null, LBrect2, paint);
+		// canvas.drawBitmap(rbutton, null, RBrect2, paint);
+		// canvas.drawBitmap(dbutton, null, DBrect2, paint);
+		// canvas.drawBitmap(timebg2, null, Trect1, paint);
+		// canvas.drawBitmap(timebg, null, Trect2, paint);
+		//
+		// canvas.drawTextOnPath("用时：" + settime(redtime), path, 0, 0, paint);
+		// canvas.drawTextOnPath("用时：" + settime(blacktime), path2, 0, 0,
+		// paint);
 
-		canvas.drawTextOnPath("用时：" + settime(redtime), path, 0, 0, paint);
-		canvas.drawTextOnPath("用时：" + settime(blacktime), path2, 0, 0, paint);
 		if (candraw) {
 			int i, j = 0;
 			int temp;
@@ -269,152 +249,39 @@ public class GameView extends View {
 	}
 
 	public boolean onTouchEvent(MotionEvent event) {
-
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
 			if (chessrect.contains((int) event.getX(), (int) event.getY())) {
 				int j = ((int) event.getX() - START_POINT_X) / chessedge;
 				int i = ((int) event.getY() - START_POINT_Y) / chessedge;
-				if (vsmodle == vscomputer && iniposition[i][j] < 8
-						&& iniposition[i][j] > 0 && firstchoice == true) {
-					return true;
-				}
 				ClickandMove(i, j);
 				postInvalidate();
-
 			}
 
 			if (LBrect.contains((int) event.getX(), (int) event.getY())
 					|| LBrect2.contains((int) event.getX(), (int) event.getY())) {
-				if (vsmodle == vscomputer && sider == 1) {
-					Toast.makeText(mycontext, "对方正在进行思考请稍候....", 1000).show();
-					return true;
-				}
-				new AlertDialog.Builder(mycontext)
-						.setTitle("对方认输")
-						.setMessage("是否同意")
-						.setPositiveButton("同意",
-								new DialogInterface.OnClickListener() {
-									public void onClick(DialogInterface dialog,
-											int which) {
-										new AlertDialog.Builder(mycontext)
-												.setMessage("是否再来一局")
-												.setPositiveButton(
-														"继续",
-														new DialogInterface.OnClickListener() {
-															public void onClick(
-																	DialogInterface dialog,
-																	int which) {
-
-																vswho();
-																RestartGame();
-															}
-
-														})
-												.setNegativeButton(
-														"退出",
-														new DialogInterface.OnClickListener() {
-															public void onClick(
-																	DialogInterface dialog,
-																	int which) {
-																System.exit(0);
-
-															}
-
-														}).show();
-									}
-
-								})
-						.setNegativeButton("不同意",
-								new DialogInterface.OnClickListener() {
-									public void onClick(DialogInterface dialog,
-											int which) {
-
-									}
-
-								}).show();
-
+				gameController.onEvent(EVENT.LOSE);
 			}
 			if (RBrect.contains((int) event.getX(), (int) event.getY())
 					|| RBrect2.contains((int) event.getX(), (int) event.getY())) {
-				if (vsmodle == vscomputer && sider == 1) {
-					Toast.makeText(mycontext, "对方正在进行思考请稍候....", 1000).show();
-					return true;
-				}
-				BackStep();
+				gameController.onEvent(EVENT.REGRET);
 			}
 			if (DBrect.contains((int) event.getX(), (int) event.getY())
 					|| DBrect2.contains((int) event.getX(), (int) event.getY())) {
-				if (vsmodle == vscomputer && sider == 1) {
-					Toast.makeText(mycontext, "对方正在进行思考请稍候....", 1000).show();
-					return true;
-				}
-				// timertask.interrupt();
-				new AlertDialog.Builder(mycontext)
-						.setTitle("对方求和")
-						.setMessage("是否同意")
-						.setPositiveButton("同意",
-								new DialogInterface.OnClickListener() {
-									public void onClick(DialogInterface dialog,
-											int which) {
-
-										new AlertDialog.Builder(mycontext)
-												.setMessage("是否再来一局")
-												.setPositiveButton(
-														"继续",
-														new DialogInterface.OnClickListener() {
-															public void onClick(
-																	DialogInterface dialog,
-																	int which) {
-
-																vswho();
-																RestartGame();
-															}
-
-														})
-												.setNegativeButton(
-														"退出",
-														new DialogInterface.OnClickListener() {
-															public void onClick(
-																	DialogInterface dialog,
-																	int which) {
-																System.exit(0);
-
-															}
-
-														}).show();
-									}
-
-								})
-						.setNegativeButton("不同意",
-								new DialogInterface.OnClickListener() {
-									public void onClick(DialogInterface dialog,
-											int which) {
-
-									}
-
-								}).show();
+				gameController.onEvent(EVENT.DRAW);
 			}
 		}
 		return true;
 	}
 
 	public boolean WhoseTurn() {
-		if (sider == 0 && iniposition[first_i][first_j] > 7
-				&& iniposition[first_i][first_j] < 15) {
-			sider = 1;
-			if (vsmodle == vscomputer) {
-				new AICompute().start();
-			}
-			return true;
-		} else if (sider == 1 && iniposition[first_i][first_j] > 0
-				&& iniposition[first_i][first_j] < 8) {
-			sider = 0;
-			return true;
-		} else if (sider == 2) {
-			Toast.makeText(mycontext, "有没有选过顺序啊", 1000).show();
+		if (role.empty()) {
+			Toast.makeText(mycontext, "有没有选过顺序啊", Toast.LENGTH_SHORT).show();
 			return false;
+		} else if (role.canMove(iniposition[first_i][first_j])&&gameController.canMove(iniposition[first_i][first_j])) {
+			role.changeRole();
+			return true;
 		} else {
-			Toast.makeText(mycontext, "不是你出招的时候", 1000).show();
+			Toast.makeText(mycontext, "不是你出招的时候", Toast.LENGTH_SHORT).show();
 			return false;
 		}
 	}
@@ -433,53 +300,21 @@ public class GameView extends View {
 			if (CanMove(x, y) && WhoseTurn()) {
 				di = x;
 				dj = y;
-				myhandler.sendEmptyMessage(StaticDate.SOUND_MOVE);
+				gameController.playMoveSound();
+				gameController.onMove(first_i, first_j, di, dj);
 				step.add(new Step(first_i, first_j,
 						iniposition[first_i][first_j], di, dj,
 						iniposition[di][dj]));
-				if (iniposition[x][y] == 1 || iniposition[x][y] == 8)// 将军判定
-				{
+				if (iniposition[x][y] == 1 || iniposition[x][y] == 8) { // 将军判定
 
-					int temp = iniposition[x][y];
 					iniposition[x][y] = iniposition[first_i][first_j];
 					iniposition[first_i][first_j] = 0;
 					postInvalidate();
-					if (temp == 1) {
-						myhandler.sendEmptyMessage(StaticDate.WIN);
-					} else {
-						myhandler.sendEmptyMessage(StaticDate.LOSE);
-					}
-					;
 
-					new AlertDialog.Builder(mycontext)
-							.setTitle(
-									(temp == 1 && chooseside == 0 || temp == 8
-											&& chooseside == 1) ? "红方胜利"
-											: "黑方胜利")
-							.setMessage("是否继续？")
-							.setPositiveButton("继续",
-									new DialogInterface.OnClickListener() {
-										public void onClick(
-												DialogInterface dialog,
-												int which) {
-
-											vswho();
-											RestartGame();
-
-										}
-
-									})
-							.setNegativeButton("退出",
-									new DialogInterface.OnClickListener() {
-										public void onClick(
-												DialogInterface dialog,
-												int which) {
-
-											myhandler
-													.sendEmptyMessage(StaticDate.EXIT);
-										}
-
-									}).show();
+					// String title = (temp == 1 && chooseside == 0 || temp == 8
+					// && chooseside == 1) ? "红方胜利" : "黑方胜利";
+					String title = "比赛结束";
+					gameController.onEndDialog(title);
 
 				}
 				iniposition[x][y] = iniposition[first_i][first_j];
@@ -487,6 +322,20 @@ public class GameView extends View {
 			}
 			firstchoice = true;
 		}
+	}
+
+	public void moveStep(Point[] p) {
+		role.changeRole();
+		step.add(new Step(p[0].x, p[0].y, iniposition[p[0].x][p[0].y], p[1].x,
+				p[1].y, iniposition[p[1].x][p[1].y]));
+		canmove = true;
+		if (iniposition[p[1].x][p[1].y] == 8) {
+			//in bluetooth model
+			Toast.makeText(mycontext, "很遗憾，你输掉了此局...", 1000).show();
+		}
+		iniposition[p[1].x][p[1].y] = iniposition[p[0].x][p[0].y];
+		iniposition[p[0].x][p[0].y] = 0;
+		postInvalidate();
 	}
 
 	private boolean CanMove(int i, int j) {
@@ -531,8 +380,7 @@ public class GameView extends View {
 
 	}
 
-	private boolean isTheSameSide(int i, int j)// 判断是否为自己人
-	{
+	private boolean isTheSameSide(int i, int j) { // 判断是否为自己人
 		if ((iniposition[first_i][first_j] < 8 && iniposition[i][j] < 8 && iniposition[i][j] > 0)
 				|| (iniposition[first_i][first_j] > 7 && iniposition[i][j] > 7 && iniposition[i][j] < 15)) {
 			return true;
@@ -557,8 +405,7 @@ public class GameView extends View {
 		// 1.移动地方有敌人判断能否移动到2.移动地方是自己人，return false3.移动地方没人判断能否移动到
 		if (iniposition[first_i][first_j] != 0) {
 
-			if (iniposition[first_i][first_j] == B_KING)// 黑子帅
-			{
+			if (iniposition[first_i][first_j] == B_KING) { // 黑子帅
 				if (i > 2 || i < 0 || j > 5 || j < 3) {
 					return false;
 				} else if (isMoveNear(i, j)) {
@@ -574,8 +421,7 @@ public class GameView extends View {
 					return true;
 
 				}
-			} else if (iniposition[first_i][first_j] == R_KING)// 红子帅
-			{
+			} else if (iniposition[first_i][first_j] == R_KING) { // 红子帅
 				if (i > 9 || i < 7 || j > 5 || j < 3) {
 					return false;
 				} else if (isMoveNear(i, j)) {
@@ -776,8 +622,7 @@ public class GameView extends View {
 		return false;
 	}
 
-	public void RestartGame() {
-
+	public void initChess() {
 		redtime = 0;
 		blacktime = 0;
 		for (int ii = 0; ii < 10; ii++) {
@@ -795,322 +640,53 @@ public class GameView extends View {
 			step.remove(step.size() - 1);
 			iniposition[temp.i][temp.j] = temp.x;
 			iniposition[temp.ii][temp.jj] = temp.xx;
-			if (sider == 0) // 同时要把下子权给悔棋的人
-			{
-				sider = 1;
-			} else {
-				sider = 0;
-			}
+			role.changeRole();
 			postInvalidate();
 		}
 	}
 
-	public void vswho() {
-		new AlertDialog.Builder(mycontext)
-				.setPositiveButton("人机对战",
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog,
-									int which) {
+	private int[] redResource = new int[] { R.drawable.rking, R.drawable.rcar,
+			R.drawable.rhorse, R.drawable.rcanon, R.drawable.rbishop,
+			R.drawable.relephant, R.drawable.rpawn };
+	private int[] blackResource = new int[] { R.drawable.bking,
+			R.drawable.bcar, R.drawable.bhorse, R.drawable.bcanon,
+			R.drawable.bbishop, R.drawable.belephant, R.drawable.bpawn };
 
-								m_pMG = new MoveGenerator();
-								m_pEvel = new Eveluation();
-								m_pSE = new SearchEngine();
+	private void renderChess(boolean toRed) {
+		int[] chessRes = toRed ? redResource : blackResource;
+		int size = BitmapFactory.decodeResource(res, R.drawable.bbishop)
+				.getHeight();
+		Matrix mMatrix = new Matrix();
+		float Scale = (float) ((float) chessedge / (float) size);
+		mMatrix.reset();
+		mMatrix.postScale(Scale, Scale);
+		chooseTarget = Bitmap.createBitmap(
+				BitmapFactory.decodeResource(res, R.drawable.choice), 0, 0,
+				size, size, mMatrix, true);
+		for (int i = 0; i < chessRes.length; i++) {
+			chessImage[i + 7] = Bitmap.createBitmap(
+					BitmapFactory.decodeResource(res, chessRes[i]), 0, 0, size,
+					size, mMatrix, true);
+		}
+		chessRes = !toRed ? redResource : blackResource;
+		mMatrix.postRotate(180);
+		for (int i = 0; i < chessRes.length; i++) {
+			chessImage[i] = Bitmap.createBitmap(
+					BitmapFactory.decodeResource(res, chessRes[i]), 0, 0, size,
+					size, mMatrix, true);
+		}
 
-								m_pSE.SetSearchDepth(3); // 设定搜索层数为3
-								m_pSE.SetMoveGenerator(m_pMG);// 给搜索引擎设定走法产生器
-								m_pSE.SetEveluator(m_pEvel); // 给搜索引擎设定估值核心
-								m_pSE.SetUserChessColor(2);
-
-								int size = BitmapFactory.decodeResource(res,
-										R.drawable.bbishop).getHeight();
-								Matrix mMatrix = new Matrix();
-								float Scale = (float) ((float) chessedge / (float) size);
-								mMatrix.reset();
-								mMatrix.postScale(Scale, Scale);
-								chooseTarget = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.choice), 0, 0, size,
-										size, mMatrix, true);
-								chessImage[7] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.rking), 0, 0, size,
-										size, mMatrix, true);
-								chessImage[8] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.rcar), 0, 0, size,
-										size, mMatrix, true);
-								chessImage[9] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.rhorse), 0, 0, size,
-										size, mMatrix, true);
-								chessImage[10] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.rcanon), 0, 0, size,
-										size, mMatrix, true);
-								chessImage[11] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.rbishop), 0, 0,
-										size, size, mMatrix, true);
-								chessImage[12] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.relephant), 0, 0,
-										size, size, mMatrix, true);
-								chessImage[13] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.rpawn), 0, 0, size,
-										size, mMatrix, true);
-								mMatrix.postRotate(180);
-								chessImage[0] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.bking), 0, 0, size,
-										size, mMatrix, true);
-								chessImage[1] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.bcar), 0, 0, size,
-										size, mMatrix, true);
-								chessImage[2] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.bhorse), 0, 0, size,
-										size, mMatrix, true);
-								chessImage[3] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.bcanon), 0, 0, size,
-										size, mMatrix, true);
-								chessImage[4] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.bbishop), 0, 0,
-										size, size, mMatrix, true);
-								chessImage[5] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.belephant), 0, 0,
-										size, size, mMatrix, true);
-								chessImage[6] = Bitmap.createBitmap(
-										BitmapFactory.decodeResource(res,
-												R.drawable.bpawn), 0, 0, size,
-										size, mMatrix, true);
-
-								sider = 0;
-								chooseside = 0;
-								candraw = true;
-								vsmodle = vscomputer;
-								postInvalidate();
-							}
-
-						})
-				.setNegativeButton("人人对战",
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog,
-									int which) {
-								chooseside();
-								vsmodle = vspeople;
-							}
-
-						}).show();
+		if(toRed){
+			role=new Role(7, 15);
+		}else{
+			role=new Role(0,8);
+		}
+		candraw = true;
+		postInvalidate();
 	}
 
-	public void chooseside() {
-
-		sider = 2;
-		if (timertask != null) {
-			timertask.Clear();
-		}
-		new AlertDialog.Builder(mycontext)
-				.setTitle("下棋先后顺序选择")
-				.setMessage("红方为先手")
-				.setPositiveButton("红方", new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-						int size = BitmapFactory.decodeResource(res,
-								R.drawable.bbishop).getHeight();
-						Matrix mMatrix = new Matrix();
-						float Scale = (float) ((float) chessedge / (float) size);
-						mMatrix.reset();
-						mMatrix.postScale(Scale, Scale);
-						chooseTarget = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.choice), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[7] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rking), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[8] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rcar), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[9] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rhorse), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[10] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rcanon), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[11] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rbishop), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[12] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.relephant), 0,
-								0, size, size, mMatrix, true);
-						chessImage[13] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rpawn), 0, 0,
-								size, size, mMatrix, true);
-						mMatrix.postRotate(180);
-						chessImage[0] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bking), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[1] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bcar), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[2] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bhorse), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[3] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bcanon), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[4] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bbishop), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[5] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.belephant), 0,
-								0, size, size, mMatrix, true);
-						chessImage[6] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bpawn), 0, 0,
-								size, size, mMatrix, true);
-
-						sider = 0;
-						chooseside = 0;
-						candraw = true;
-						postInvalidate();
-					}
-
-				})
-				.setNegativeButton("黑方", new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int which) {
-						int size = BitmapFactory.decodeResource(res,
-								R.drawable.bbishop).getHeight();
-						Matrix mMatrix = new Matrix();
-						float Scale = (float) ((float) chessedge / (float) size);
-						Log.i("Scale", Float.toString(Scale));
-						mMatrix.reset();
-						mMatrix.postScale(Scale, Scale);
-						chooseTarget = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.choice), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[7] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bking), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[8] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bcar), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[9] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bhorse), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[10] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bcanon), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[11] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bbishop), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[12] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.belephant), 0,
-								0, size, size, mMatrix, true);
-						chessImage[13] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.bpawn), 0, 0,
-								size, size, mMatrix, true);
-						mMatrix.postRotate(180);
-						chessImage[0] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rking), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[1] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rcar), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[2] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rhorse), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[3] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rcanon), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[4] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rbishop), 0, 0,
-								size, size, mMatrix, true);
-						chessImage[5] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.relephant), 0,
-								0, size, size, mMatrix, true);
-						chessImage[6] = Bitmap.createBitmap(BitmapFactory
-								.decodeResource(res, R.drawable.rpawn), 0, 0,
-								size, size, mMatrix, true);
-						chooseTarget = BitmapFactory.decodeResource(res,
-								R.drawable.choice);
-						sider = 1;
-						chooseside = 1;
-						candraw = true;
-						postInvalidate();
-					}
-
-				}).show();
-
-	}
-
-	class AICompute extends Thread {
-
-		public void run() {
-
-			m_pSE.SearchAGoodMove(iniposition);
-			CHESSMOVE m_cmBestMove = new CHESSMOVE();
-			m_cmBestMove = m_pSE.GetBestMove();// 得到最佳走法
-			step.add(new Step(m_cmBestMove.Fromy, m_cmBestMove.Fromx,
-					m_cmBestMove.nChessID, m_cmBestMove.Toy, m_cmBestMove.Tox,
-					iniposition[m_cmBestMove.Toy][m_cmBestMove.Tox]));
-			Log.i(Integer
-					.toString(iniposition[m_cmBestMove.Toy][m_cmBestMove.Tox]),
-					Integer.toString(m_cmBestMove.nChessID));
-			iniposition[m_cmBestMove.Fromy][m_cmBestMove.Fromx] = 0;
-			iniposition[m_cmBestMove.Toy][m_cmBestMove.Tox] = m_cmBestMove.nChessID;
-			sider = 0;
-			postInvalidate();
-			myhandler.sendEmptyMessage(StaticDate.SOUND_MOVE);
-		}
-	}
-
-	public String settime(int time) {
-		int sec = time % 60;
-		int min = time / 60;
-		if (sec < 10 && min < 10) {
-			return "0" + Integer.toString(min) + "：0" + Integer.toString(sec);
-		} else if (sec >= 10 && min < 10) {
-			return "0" + Integer.toString(min) + "：" + Integer.toString(sec);
-		} else if (sec < 10 && min >= 10) {
-			return Integer.toString(min) + "：0" + Integer.toString(sec);
-		} else {
-			return Integer.toString(min) + "：" + Integer.toString(sec);
-		}
-
-	}
-
-	class ChessTimer extends Thread {
-
-		public void Clear() {
-			redtime = 0;
-			blacktime = 0;
-		}
-
-		public void run() {
-			while (!Thread.currentThread().isInterrupted()) {
-
-				switch (sider) {
-				case 0:
-					redtime++;
-					break;
-				case 1:
-					blacktime++;
-					break;
-				}
-
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-				// 使用postInvalidate可以直接在线程中更新界面
-				postInvalidate();
-			}
-		}
-
+	public void setFirstGo(boolean first) {
+		renderChess(first);
 	}
 
 }

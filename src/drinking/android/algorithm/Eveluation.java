@@ -1,7 +1,6 @@
 package drinking.android.algorithm;
 
 
-import java.lang.Math;
 public class Eveluation {
 	final int BA0[][]=
 	{

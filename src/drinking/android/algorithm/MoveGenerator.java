@@ -1,5 +1,4 @@
 package drinking.android.algorithm;
-import java.lang.Math;
 
 public class MoveGenerator {
 	
