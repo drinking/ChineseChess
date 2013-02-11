@@ -193,7 +193,7 @@ public class BluetoothService {
 		// Send a failure message back to the Activity
 		Message msg = mHandler.obtainMessage(BluetoothGameActivity.MESSAGE_TOAST);
 		Bundle bundle = new Bundle();
-		bundle.putString(BluetoothGameActivity.TOAST, "Unable to connect device");
+		bundle.putString(BluetoothGameActivity.TOAST, "无法连接设备");
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
 	}
@@ -207,7 +207,7 @@ public class BluetoothService {
 		// Send a failure message back to the Activity
 		Message msg = mHandler.obtainMessage(BluetoothGameActivity.MESSAGE_TOAST);
 		Bundle bundle = new Bundle();
-		bundle.putString(BluetoothGameActivity.TOAST, "Device connection was lost");
+		bundle.putString(BluetoothGameActivity.TOAST, "连接断开");
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
 	}

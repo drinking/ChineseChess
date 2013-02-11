@@ -13,7 +13,6 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
-import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.view.MotionEvent;
@@ -21,10 +20,6 @@ import android.view.View;
 import android.widget.Toast;
 
 public class GameView extends View {
-
-	enum EVENT {
-		LOSE, DRAW, REGRET
-	}
 
 	GameController gameController;
 	final int NOCHESS = 0;// 没有棋子
@@ -46,8 +41,6 @@ public class GameView extends View {
 	final int R_ELEPHANT = 13;// 红相
 	final int R_PAWN = 14;// 红兵
 
-	final int vspeople = 0;
-	int vsmodle;
 	private int[][] iniposition = {
 			{ B_CAR, B_HORSE, B_ELEPHANT, B_BISHOP, B_KING, B_BISHOP,
 					B_ELEPHANT, B_HORSE, B_CAR },
@@ -99,23 +92,15 @@ public class GameView extends View {
 	private int START_POINT_X = 13;// 并非最初数据，注意考虑到图片的像素的大小
 	private int START_POINT_Y = 18;// 一般是START_POINT_X=原始点像素-图片像素的一半
 	private boolean firstchoice = true;
-	private int first_i;
-	private int first_j;
+	private int first_i=-1;
+	private int first_j=-1;
 	private int di;
 	private int dj;
-	int redtime = 0;
-	int blacktime = 0;
 	boolean canmove = false;
 	Bitmap[] chessImage = new Bitmap[14];
 	Bitmap chooseTarget;
-	Bitmap rbutton;
-	Bitmap lbutton;
-	Bitmap dbutton;
-	Bitmap rbutton2;
-	Bitmap lbutton2;
-	Bitmap dbutton2;
-	Bitmap timebg;
-	Bitmap timebg2;
+	Bitmap choosedTarget;
+
 	private Paint paint;
 	private Resources res;
 	Role role;
@@ -123,22 +108,9 @@ public class GameView extends View {
 	private boolean candraw = false;
 	private Context mycontext;
 	int chessedge;
-	int cwidth, cheight;
-	Rect boardrect;
 	Rect chessrect;
-	Rect LBrect;
-	Rect DBrect;
-	Rect RBrect;
-	Rect LBrect2;
-	Rect DBrect2;
-	Rect RBrect2;
-	Rect Trect1;
-	Rect Trect2;
-	Path path;
 
-	Path path2;
 	private ArrayList<Step> step = new ArrayList<Step>();
-	int i = 0;
 	Bitmap chessBoard;
 
 	public GameView(Context context, GameController controller) {
@@ -156,73 +128,16 @@ public class GameView extends View {
 		paint.setTextSize(chessedge / 2);
 		START_POINT_X = (screenWidth - 9 * chessedge) / 2;
 		START_POINT_Y = ((screenHeight - 9 * chessedge) / 2) - chessedge / 2;// 第一个棋子的坐标
-		cwidth = START_POINT_X + 9 * chessedge;// 棋子铺满时的长宽
-		cheight = START_POINT_Y + 10 * chessedge;
-		boardrect = new Rect(chessedge / 2, (screenHeight - 9 * chessedge) / 2,
-				chessedge / 2 + 8 * chessedge, (screenHeight - 9 * chessedge)
-						/ 2 + 9 * chessedge);// 棋牌矩形
+
 		chessrect = new Rect(0, (screenHeight / 2 - 5 * chessedge),
 				9 * chessedge, screenHeight / 2 + 5 * chessedge);// 棋牌矩形
-		int startbutton = (START_POINT_Y - chessedge) / 2;
-		int buttonedge = chessedge;
-		LBrect = new Rect(chessedge / 2, startbutton, chessedge / 2
-				+ buttonedge, startbutton + buttonedge);
-		DBrect = new Rect(chessedge / 2 + 3 * buttonedge / 2, startbutton,
-				chessedge / 2 + 5 * buttonedge / 2, startbutton + buttonedge);
-		RBrect = new Rect(chessedge / 2 + 3 * buttonedge, startbutton,
-				chessedge / 2 + 4 * buttonedge, startbutton + buttonedge);
-		Trect1 = new Rect(screenWidth / 2 + chessedge / 2, startbutton,
-				screenWidth - chessedge / 2, startbutton + buttonedge);
-		LBrect2 = new Rect(screenWidth - (chessedge / 2 + buttonedge),
-				screenHeight - (startbutton + buttonedge), screenWidth
-						- chessedge / 2, screenHeight - startbutton);
-		DBrect2 = new Rect(screenWidth - (chessedge / 2 + 5 * buttonedge / 2),
-				screenHeight - (startbutton + buttonedge), screenWidth
-						- (chessedge / 2 + 3 * buttonedge / 2), screenHeight
-						- startbutton);
-		RBrect2 = new Rect(screenWidth - (chessedge / 2 + 4 * buttonedge),
-				screenHeight - (startbutton + buttonedge), screenWidth
-						- (chessedge / 2 + 3 * buttonedge), screenHeight
-						- startbutton);
-		Trect2 = new Rect(chessedge / 2, screenHeight
-				- (startbutton + buttonedge), screenWidth
-				- (chessedge + 4 * buttonedge), screenHeight - startbutton);
-		path = new Path();
-		path2 = new Path();
-		path.moveTo(chessedge / 2, screenHeight - startbutton - chessedge / 4);
-		path.lineTo(screenWidth - (chessedge + 4 * buttonedge), screenHeight
-				- startbutton - chessedge / 4);
-		path2.moveTo(screenWidth - chessedge / 2, startbutton + chessedge / 4);
-		path2.lineTo(screenWidth / 2 + chessedge / 2, startbutton + chessedge
-				/ 4);
-		// //////////////////////////////////////////////////////////////////
-		rbutton = BitmapFactory.decodeResource(res, R.drawable.regret);
-		lbutton = BitmapFactory.decodeResource(res, R.drawable.lose);
-		dbutton = BitmapFactory.decodeResource(res, R.drawable.draw);
-		rbutton2 = BitmapFactory.decodeResource(res, R.drawable.regret2);
-		lbutton2 = BitmapFactory.decodeResource(res, R.drawable.lose2);
-		dbutton2 = BitmapFactory.decodeResource(res, R.drawable.draw2);
-		timebg = BitmapFactory.decodeResource(res, R.drawable.timebg);
-		timebg2 = BitmapFactory.decodeResource(res, R.drawable.timebg2);
+
 		chessBoard = new DrawUtils(screenWidth, screenHeight).drawChessboard();
 	}
 
 	public void onDraw(Canvas canvas) {
 		this.setBackgroundResource(R.drawable.yangpi);
-		// canvas.drawBitmap(chessboard, null, boardrect, paint);
 		canvas.drawBitmap(chessBoard, 0, 0, paint);
-		// canvas.drawBitmap(lbutton2, null, LBrect, paint);
-		// canvas.drawBitmap(rbutton2, null, RBrect, paint);
-		// canvas.drawBitmap(dbutton2, null, DBrect, paint);
-		// canvas.drawBitmap(lbutton, null, LBrect2, paint);
-		// canvas.drawBitmap(rbutton, null, RBrect2, paint);
-		// canvas.drawBitmap(dbutton, null, DBrect2, paint);
-		// canvas.drawBitmap(timebg2, null, Trect1, paint);
-		// canvas.drawBitmap(timebg, null, Trect2, paint);
-		//
-		// canvas.drawTextOnPath("用时：" + settime(redtime), path, 0, 0, paint);
-		// canvas.drawTextOnPath("用时：" + settime(blacktime), path2, 0, 0,
-		// paint);
 
 		if (candraw) {
 			int i, j = 0;
@@ -240,11 +155,12 @@ public class GameView extends View {
 				}
 				j = 0;
 			}
-			if (false == firstchoice) {
-				canvas.drawBitmap(chooseTarget, first_j * chessedge
+//			if (false == firstchoice) {
+			if(first_i!=-1)
+				canvas.drawBitmap(choosedTarget, first_j * chessedge
 						+ START_POINT_X, first_i * chessedge + START_POINT_Y,
 						paint);
-			}
+//			}
 		}
 	}
 
@@ -256,19 +172,6 @@ public class GameView extends View {
 				ClickandMove(i, j);
 				postInvalidate();
 			}
-
-			if (LBrect.contains((int) event.getX(), (int) event.getY())
-					|| LBrect2.contains((int) event.getX(), (int) event.getY())) {
-				gameController.onEvent(EVENT.LOSE);
-			}
-			if (RBrect.contains((int) event.getX(), (int) event.getY())
-					|| RBrect2.contains((int) event.getX(), (int) event.getY())) {
-				gameController.onEvent(EVENT.REGRET);
-			}
-			if (DBrect.contains((int) event.getX(), (int) event.getY())
-					|| DBrect2.contains((int) event.getX(), (int) event.getY())) {
-				gameController.onEvent(EVENT.DRAW);
-			}
 		}
 		return true;
 	}
@@ -277,7 +180,8 @@ public class GameView extends View {
 		if (role.empty()) {
 			Toast.makeText(mycontext, "有没有选过顺序啊", Toast.LENGTH_SHORT).show();
 			return false;
-		} else if (role.canMove(iniposition[first_i][first_j])&&gameController.canMove(iniposition[first_i][first_j])) {
+		} else if (role.canMove(iniposition[first_i][first_j])
+				&& gameController.canMove(iniposition[first_i][first_j])) {
 			role.changeRole();
 			return true;
 		} else {
@@ -288,11 +192,12 @@ public class GameView extends View {
 
 	public void ClickandMove(int x, int y) {
 		if (true == firstchoice) {
+			if (iniposition[x][y] == 0) {
+				return ;
+			}
+			firstchoice = false;
 			first_i = x;
 			first_j = y;
-			if (iniposition[x][y] != 0) {
-				firstchoice = false;
-			}
 		} else if (false == firstchoice && first_i == x && first_j == y) {
 			firstchoice = true;
 		} else {
@@ -328,10 +233,13 @@ public class GameView extends View {
 		role.changeRole();
 		step.add(new Step(p[0].x, p[0].y, iniposition[p[0].x][p[0].y], p[1].x,
 				p[1].y, iniposition[p[1].x][p[1].y]));
+		first_i=p[0].x;
+		first_j=p[0].y;
 		canmove = true;
 		if (iniposition[p[1].x][p[1].y] == 8) {
-			//in bluetooth model
-			Toast.makeText(mycontext, "很遗憾，你输掉了此局...", 1000).show();
+			// in bluetooth model
+			Toast.makeText(mycontext, "很遗憾，你输掉了此局...", Toast.LENGTH_SHORT)
+					.show();
 		}
 		iniposition[p[1].x][p[1].y] = iniposition[p[0].x][p[0].y];
 		iniposition[p[0].x][p[0].y] = 0;
@@ -623,8 +531,6 @@ public class GameView extends View {
 	}
 
 	public void initChess() {
-		redtime = 0;
-		blacktime = 0;
 		for (int ii = 0; ii < 10; ii++) {
 			for (int jj = 0; jj < 9; jj++) {
 				iniposition[ii][jj] = startposition[ii][jj];
@@ -633,7 +539,7 @@ public class GameView extends View {
 		postInvalidate();
 	}
 
-	public void BackStep() {
+	public void stepBack() {
 
 		if (step.size() > 0) {
 			Step temp = step.get(step.size() - 1);
@@ -663,6 +569,9 @@ public class GameView extends View {
 		chooseTarget = Bitmap.createBitmap(
 				BitmapFactory.decodeResource(res, R.drawable.choice), 0, 0,
 				size, size, mMatrix, true);
+		choosedTarget = Bitmap.createBitmap(
+				BitmapFactory.decodeResource(res, R.drawable.choice2), 0, 0,
+				size, size, mMatrix, true);
 		for (int i = 0; i < chessRes.length; i++) {
 			chessImage[i + 7] = Bitmap.createBitmap(
 					BitmapFactory.decodeResource(res, chessRes[i]), 0, 0, size,
@@ -676,10 +585,10 @@ public class GameView extends View {
 					size, mMatrix, true);
 		}
 
-		if(toRed){
-			role=new Role(7, 15);
-		}else{
-			role=new Role(0,8);
+		if (toRed) {
+			role = new Role(7, 15);
+		} else {
+			role = new Role(0, 8);
 		}
 		candraw = true;
 		postInvalidate();

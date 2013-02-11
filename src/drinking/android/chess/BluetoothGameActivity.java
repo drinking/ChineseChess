@@ -1,17 +1,26 @@
 package drinking.android.chess;
 
+import org.drinking.customui.DialogCreator;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 @SuppressLint("NewApi")
@@ -19,7 +28,6 @@ public class BluetoothGameActivity extends Activity {
 	// Debugging
 	private static final String TAG = "BluetoothChat";
 	private static final boolean D = true;
-	private boolean soundon = false;
 	// Message types sent from the BluetoothChatService Handler
 	public static final int MESSAGE_STATE_CHANGE = 1;
 	public static final int MESSAGE_READ = 2;
@@ -27,25 +35,6 @@ public class BluetoothGameActivity extends Activity {
 	public static final int MESSAGE_DEVICE_NAME = 4;
 	public static final int MESSAGE_TOAST = 5;
 	
-	public static final int MESSAGE_NEXTSTEP = 6;
-	public static final int MESSAGE_AGREE = 7;
-	public static final int MESSAGE_DISAGREE = 8;
-	public static final int MESSAGE_LOSE = 9;
-	public static final int MESSAGE_DRAW = 10;
-	public static final int MESSAGE_REGRET = 11;
-	public static final int MESSAGE_SOUND = 12;
-
-	// status of chess
-	public static final int STATUS_RED = 7;
-	public static final int STATUS_BLACK = 8;
-	public static final int STATUS_AGREE = 9;
-	public static final int STATUS_DISAGREE = 10;
-	public static final int STATUS_NEXTSTEP = 11;
-	public static final int STATUS_REGRET = 12;
-	public static final int STATUS_ASKDRAW = 13;
-	public static final int STATUS_ASKLOSE = 14;
-	public static final int STATUS_ASKAGAIN = 15;
-
 	// Key names received from the BluetoothChatService Handler
 	public static final String DEVICE_NAME = "device_name";
 	public static final String TOAST = "toast";
@@ -72,8 +61,11 @@ public class BluetoothGameActivity extends Activity {
 			finish();
 			return;
 		}
+		
 		gameController = new GameController(this, getWindowManager()
 				.getDefaultDisplay());
+		
+		buildConnection();
 		setContentView(gameController.getGameView());
 	}
 
@@ -139,26 +131,6 @@ public class BluetoothGameActivity extends Activity {
 		}
 	}
 
-	/**
-	 * Sends a message.
-	 * 
-	 * @param message
-	 *            A string of text to send.
-	 */
-	private void SendMessage(String message) {
-		// Check that we're actually connected before trying anything
-		if (mChatService.getState() != BluetoothService.STATE_CONNECTED) {
-			Toast.makeText(this, "连接不存在", Toast.LENGTH_SHORT).show();
-			return;
-		}
-
-		// Check that there's actually something to send
-		if (message.length() > 0) {
-			byte[] send = message.getBytes();
-			mChatService.write(send);
-		}
-	}
-
 	// The Handler that gets information back from the BluetoothChatService
 	private final Handler mHandler = new Handler() {
 		@Override
@@ -186,7 +158,6 @@ public class BluetoothGameActivity extends Activity {
 				gameController.receviePacket((byte[]) msg.obj);
 				break;
 			case MESSAGE_DEVICE_NAME:
-				Toast.makeText(getApplicationContext(), "连接成功", Toast.LENGTH_SHORT).show();
 				gameController.setConnection(mChatService);
 				if(host) gameController.chooseside();
 				break;
@@ -194,27 +165,6 @@ public class BluetoothGameActivity extends Activity {
 				Toast.makeText(getApplicationContext(),
 						msg.getData().getString(TOAST), Toast.LENGTH_SHORT)
 						.show();
-				break;
-			case MESSAGE_NEXTSTEP:
-
-				SendMessage(msg.getData().getString("STEP"));
-				break;
-			case MESSAGE_AGREE:
-				SendMessage("9a0a0a0a0");
-				break;
-			case MESSAGE_DISAGREE:
-				SendMessage("10a0a0a0a0");
-				break;
-			case MESSAGE_LOSE:
-				SendMessage("14a0a0a0a0");
-				break;
-			case MESSAGE_DRAW:
-				SendMessage("13a0a0a0a0");
-				break;
-			case MESSAGE_REGRET:
-				SendMessage("12a0a0a0a0");
-				break;
-			case MESSAGE_SOUND:
 				break;
 			}
 		}
@@ -266,25 +216,64 @@ public class BluetoothGameActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.scan:
-			// Launch the DeviceListActivity to see devices and do scan
-			Intent serverIntent = new Intent(this, DeviceListActivity.class);
-			startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
+			buildConnection();
 			return true;
-		case R.id.discoverable:
-			// Ensure this device is discoverable by others
-			ensureDiscoverable();
+		case R.id.restart:
+			gameController.tackleNewGame();
 			return true;
-		case R.id.play:
-			gameController.chooseside();
-			return true;
-		case R.id.back:
-			// 断开蓝牙
-			mChatService.stop();
-			this.finish();
+		case R.id.regret:
+			gameController.tackleRegret();
 			return true;
 
 		}
 		return false;
 	}
-
+	private void addMenuView(){
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+		params.gravity=Gravity.BOTTOM;
+		LinearLayout ll=new LinearLayout(this);
+		ll.setGravity(Gravity.RIGHT);
+		ll.setPadding(0, 10, 0, 10);
+		Button regret=new Button(this);
+		
+		regret.setWidth(50);
+		regret.setText("悔棋");
+		regret.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				gameController.tackleRegret();
+			}
+		});
+		regret.setLayoutParams(params);
+		Button restart=new Button(this);
+		restart.setWidth(50);
+		restart.setText("重玩");
+		restart.setLayoutParams(params);
+		restart.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				gameController.tackleNewGame();
+			}
+		});
+		
+		ll.addView(regret, params);
+		ll.addView(restart, params);
+		this.addContentView(ll,  new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+	}
+	public void buildConnection(){
+		DialogInterface.OnClickListener listener=new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				if(DialogInterface.BUTTON_POSITIVE==which){
+					ensureDiscoverable();
+				}else{
+					Intent serverIntent = new Intent(BluetoothGameActivity.this, DeviceListActivity.class);
+					startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
+				}
+				dialog.dismiss();
+			}
+		};
+		DialogCreator.showCustomDialog("建立连接", "选择建立主机等待连接或连接已建立的主机", "建立主机", listener, "连接主机", listener, this);
+	}
 }

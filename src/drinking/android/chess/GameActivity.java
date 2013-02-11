@@ -3,9 +3,13 @@ package drinking.android.chess;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.Display;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.view.Gravity;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.LinearLayout;
 
 public class GameActivity extends Activity {
 
@@ -18,20 +22,40 @@ public class GameActivity extends Activity {
 		Display display = windowManager.getDefaultDisplay();
 		controller = new GameController(this, display);
 		this.setContentView(controller.getGameView());
-		controller.startGame();
+		
+		controller.startNewGame();
 	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		menu.add(0, Menu.FIRST, 0, "开始新一局");
-		return true;
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-
-		super.onOptionsItemSelected(item);
-		controller.restart();
-		return false;
+	private void addMenuView(){
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+		params.gravity=Gravity.BOTTOM;
+		LinearLayout ll=new LinearLayout(this);
+		ll.setGravity(Gravity.RIGHT);
+		ll.setPadding(0, 10, 0, 10);
+		Button regret=new Button(this);
+		
+		regret.setWidth(50);
+		regret.setText("悔棋");
+		regret.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				controller.stepBack();
+			}
+		});
+		regret.setLayoutParams(params);
+		Button restart=new Button(this);
+		restart.setWidth(50);
+		restart.setText("重玩");
+		restart.setLayoutParams(params);
+		restart.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				controller.startNewGame();
+			}
+		});
+		
+		ll.addView(regret, params);
+		ll.addView(restart, params);
+		this.addContentView(ll,  new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 	}
 }

@@ -10,7 +10,6 @@ import android.content.DialogInterface;
 import android.view.Display;
 import android.view.View;
 import android.widget.Toast;
-import drinking.android.chess.GameView.EVENT;
 
 public class GameController {
 
@@ -19,27 +18,40 @@ public class GameController {
 	Display screenSize;
 	BluetoothService connection;
 	Context mContext;
+	EventTackle tackle;
 
 	public GameController(Context context, Display screenSize) {
 		this.screenSize = screenSize;
 		mContext = context;
 		gameView = new GameView(context, this);
 		soundmanager = new GameSound(context);
+		tackle = EventTackle.getTackle(false, this, mContext);
 	}
 
 	public void receviePacket(byte[] packet) {
 		try {
 			int type = PacketUtils.getType(packet);
-			Toast.makeText(mContext, "got type " + type, Toast.LENGTH_SHORT)
-					.show();
 			switch (type) {
 			case ProtocolDefine.TYPE_NEXTSTEP:
 				gameView.moveStep(PacketUtils.getStep(packet));
 				break;
 			case ProtocolDefine.TYPE_SIDE_RED:
 			case ProtocolDefine.TYPE_SIDE_BLACK:
-				setside(type!=ProtocolDefine.TYPE_SIDE_RED);
+				setside(type != ProtocolDefine.TYPE_SIDE_RED);
 				break;
+			case ProtocolDefine.TYPE_REGRET:
+				tackle.onReceiveRegretEvent();
+				break;
+			case ProtocolDefine.TYPE_RESTART:
+				tackle.onReceiveRestartEvent();
+				break;
+			case ProtocolDefine.ACK_REGRET:
+				ackRegret(PacketUtils.getAckResult(packet));
+				break;
+			case ProtocolDefine.ACK_RESTART:
+				ackRestart(PacketUtils.getAckResult(packet));
+				break;
+				
 			}
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -48,6 +60,7 @@ public class GameController {
 
 	public void setConnection(BluetoothService conn) {
 		connection = conn;
+		tackle = EventTackle.getTackle(true, this, mContext);
 	}
 
 	public void onMove(int fromx, int fromy, int tox, int toy) {
@@ -62,42 +75,14 @@ public class GameController {
 			connection.write(PacketUtils.createCommand(type));
 		}
 	}
+	public void onRemoteEventAck(int type,boolean value){
+		if (connection != null) {
+			connection.write(PacketUtils.createAct(type, value));
+		}
+	}
 
 	interface EventListener {
 		public void onDone();
-	}
-
-	public void onEvent(EVENT event) {
-		switch (event) {
-		case LOSE:
-			requestDialog("那货认输啦", new EventListener() {
-
-				@Override
-				public void onDone() {
-					playAgainDialog();
-				}
-			});
-			break;
-		case DRAW:
-			requestDialog("那货想求和", new EventListener() {
-
-				@Override
-				public void onDone() {
-					playAgainDialog();
-				}
-			});
-			break;
-		case REGRET:
-			requestDialog("那货后悔了", new EventListener() {
-
-				@Override
-				public void onDone() {
-					gameView.BackStep();
-				}
-			});
-			break;
-		}
-
 	}
 
 	public void onEndDialog(String title) {
@@ -105,7 +90,7 @@ public class GameController {
 				"退出", restartListener, mContext);
 	}
 
-	private void requestDialog(String title, final EventListener eventListener) {
+	public void requestDialog(String title, final EventListener eventListener) {
 		DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
@@ -128,7 +113,6 @@ public class GameController {
 		public void onClick(DialogInterface dialog, int which) {
 			if (which == DialogInterface.BUTTON_POSITIVE) {
 				chooseside();
-				restart();
 			} else {
 				finishGame();
 			}
@@ -150,7 +134,7 @@ public class GameController {
 		DialogInterface.OnClickListener listener = new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 
-				boolean isRed=DialogInterface.BUTTON_POSITIVE == which;
+				boolean isRed = DialogInterface.BUTTON_POSITIVE == which;
 				setside(isRed);
 				onRemoteEvent(isRed ? ProtocolDefine.TYPE_SIDE_RED
 						: ProtocolDefine.TYPE_SIDE_BLACK);
@@ -158,7 +142,7 @@ public class GameController {
 			}
 
 		};
-		DialogCreator.showCustomDialog("下棋先后顺序选择", "红方为先手", "红方", listener,
+		DialogCreator.showCustomDialog("颜色选择", "红方为先手", "红方", listener,
 				"黑方", listener, mContext);
 
 	}
@@ -168,7 +152,7 @@ public class GameController {
 	}
 
 	public void finishGame() {
-
+		System.exit(0);
 	}
 
 	public View getGameView() {
@@ -183,16 +167,39 @@ public class GameController {
 		return screenSize.getHeight();
 	}
 
-	public void startGame() {
-		chooseside();
+	public void startNewGame() {
+		this.chooseside();
+	}
+	public void tackleNewGame(){
+		tackle.repaly();
+	}
+	public void tackleRegret(){
+		tackle.regret();
 	}
 
-	public void restart() {
-		gameView.initChess();
+	public void stepBack() {
+		gameView.stepBack();
 	}
-	public boolean canMove(int range){
-		//we can't move upside when in bluetooth model
-		if(connection!=null&&range>0&&range<8){
+
+	public void ackRegret(boolean result){
+		if(result){
+			MyApplication.Toast("对方同意悔棋...");
+			gameView.stepBack();
+		}else{
+			MyApplication.Toast("对方不同意悔棋...");
+		}
+	}
+	public void ackRestart(boolean result){
+		if(result){
+			MyApplication.Toast("对方同意重新开始...");
+			startNewGame();
+		}else{
+			MyApplication.Toast("对方不同意重新开始...");
+		}
+	}
+	public boolean canMove(int range) {
+		// we can't move upside when in bluetooth model
+		if (connection != null && range > 0 && range < 8) {
 			return false;
 		}
 		return true;
