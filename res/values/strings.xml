@@ -20,8 +20,10 @@
     <string name="button_scan">搜索其他设备</string>
 
     <!-- Options Menu -->
-    <string name="connect">连接其他设备</string>
-    <string name="discoverable">设备可被搜索</string>
+    <string name="connect">连接</string>
+    <string name="discoverable">建立主机</string>
+    <string name="restart">重玩</string>
+    <string name="regret">悔棋</string>
     <string name="helpinfo">
     </string>
 </resources>

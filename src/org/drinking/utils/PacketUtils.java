@@ -28,6 +28,10 @@ public class PacketUtils {
 		end.y=8-json.getInt(ProtocolDefine.TOY);
 		return new Point[]{start,end};
 	}
+	public static boolean getAckResult(byte[]data) throws JSONException{
+		JSONObject json = parse(data);
+		return json.getBoolean(ProtocolDefine.ACK);
+	}
 
 	public static byte[] createMoveEvent(int fromx, int fromy, int tox,
 			int toy) {
@@ -49,6 +53,17 @@ public class PacketUtils {
 		final JSONObject obj = new JSONObject();
 		try {
 			obj.put(ProtocolDefine.TYPE, typename);
+
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return obj.toString().getBytes();
+	}
+	public static byte[] createAct(int typename,boolean value) {
+		final JSONObject obj = new JSONObject();
+		try {
+			obj.put(ProtocolDefine.TYPE, typename);
+			obj.put(ProtocolDefine.ACK, value);
 
 		} catch (JSONException e) {
 			e.printStackTrace();
