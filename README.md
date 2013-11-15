@@ -3,7 +3,10 @@
 ### Features
  - player vs player on one device
  - player vs player through bluetooth
+ 
+
 ============
-中文翻译
-中国象棋软件，以人人对战和蓝牙对战为主。
-之前有尝试过移植AI，但是AI太弱了，自己不会AI算法。
+### 软件实现
+ - 在一台设备上的两人对战
+ - 通过蓝牙连接的对战
+
