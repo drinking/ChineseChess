@@ -11,5 +11,6 @@
  - 通过蓝牙连接的对战
 
 ===========
+###Screen Captures
 ![demonstration](https://raw2.github.com/drinking/ChineseChess/master/demopic/pic1.png)
 ![demonstration](https://raw2.github.com/drinking/ChineseChess/master/demopic/pic2.JPG)
