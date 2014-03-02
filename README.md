@@ -14,3 +14,7 @@
 ###Screen Captures
 ![demonstration](https://raw2.github.com/drinking/ChineseChess/master/demopic/pic1.png)
 ![demonstration](https://raw2.github.com/drinking/ChineseChess/master/demopic/pic2.JPG)
+>quote
+>quote
+>quote
+>quote
